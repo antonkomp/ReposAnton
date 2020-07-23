@@ -361,6 +361,7 @@ def main():  # главная функция
             root.attributes("-alpha", 0.94)
             root["bg"] = "gray70"
 
+
             # знак равно посредством нажатия Энтер на клавиатуре
             def inLabel(event):
                 if event.keysym == 'Return':
