@@ -1,0 +1,58 @@
+body {
+	width: 70%;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: justify;
+	background: url(https://klv-oboi.kz/img/gallery/56/thumbs/18971-730.jpg);
+    background-position: left, right;
+	background-attachment: fixed;
+	font-size: 20px;
+    line-height: 24px;
+}
+
+h1 {
+	font: 32px sans-serif;
+	margin-bottom: 15px;
+	margin-top: 20px;
+}
+ h2 {
+	 font: 20pt sans-serif;
+	 margin-bottom: 15px;
+	 margin-top: 20px;
+ }
+ 
+ h3 {
+	 font: 15pt sans-serif;
+	 margin-bottom: 15px;
+	 margin-top: 20px;
+ }
+ 
+ table {
+	width: 82%; /* Ширина таблицы */
+    background: gray; /* Цвет фона таблицы */
+    color: black; /* Цвет текста */
+    border-spacing: 1px; /* Расстояние между ячейками */
+	text-align: center;
+	border: 1px solid #000;
+ }
+ td, th {
+    background: white; /* Цвет фона ячеек */
+    padding: 1px; /* Поля вокруг текста */
+	border: 1px solid #000;
+	
+   }
+ .table2 {
+	 text-align: left;
+ }
+ figure {
+	 float:right;
+	 margin: 0 0 1em 1em;
+ }
+ figcaption {
+	 width: 210px;
+	 font-style: italic;
+ }
+ 
+ img {
+	 width: 220px;
+ }
