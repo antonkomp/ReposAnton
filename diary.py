@@ -17,6 +17,7 @@ def main():
         diary.geometry('920x560')
         diary.resizable(False, False)
         diary['bg'] = 'gray50'
+        
 
         sql_request = """CREATE TABLE IF NOT EXISTS records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
