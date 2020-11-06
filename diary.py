@@ -1,4 +1,4 @@
-from tkinter import Tk, Button, Label, Entry, LabelFrame, W, FLAT, messagebox, Text, END, Listbox
+from tkinter import Tk, Button, Label, Entry, LabelFrame, W, FLAT, messagebox, Text, END, Listbox, ANCHOR
 import sqlite3
 from datetime import datetime
 
@@ -28,7 +28,7 @@ def main():
         cursor.execute(sql_request)
         db.commit()
 
-        list_records = Listbox(diary, width=38, height=18, bg="gray90", bd=1, fg='gray15', font=('Comic Sans MS', 9))
+        list_records = Listbox(diary, width=38, height=18, bg="gray80", bd=1, fg='gray10', font=('Comic Sans MS', 9))
         list_records.place(x=21, y=166)
 
         count_record = 0
@@ -36,7 +36,8 @@ def main():
             list_records.insert(0, i)
             count_record += 1
 
-        journal_label = Label(diary, text=f"Журнал записей (всего: {count_record})", bg='gray50', font=('Comic Sans MS', 11))
+        journal_label = Label(diary, text=f"Журнал записей (всего: {count_record})", bg='gray50',
+                              font=('Comic Sans MS', 11))
         journal_label.place(x=26, y=125)
 
         list_label = Label(diary, text="№                   Дата                  Название", bg='gray50',
@@ -71,10 +72,31 @@ def main():
                                   font=('Comic Sans MS', 11))
             journal_label.place(x=26, y=125)
 
-
         save_button = Button(diary, text='Сохранить', command=save, font=('Comic Sans MS', 11),
                              bg='green3', fg='white', overrelief=FLAT, cursor="hand2")
         save_button.place(x=780, y=508)
+
+        def delete():
+            try:
+
+                date = list_records.get(ANCHOR)
+                cursor.execute(f'DELETE FROM records WHERE id = {date[0]}')
+                db.commit()
+                list_records.delete(ANCHOR)
+            except Exception:
+                pass
+
+        delete_button = Button(diary, text='Удалить', command=delete, font=('Comic Sans MS', 11),
+                               bg='red', fg='white', overrelief=FLAT, cursor="hand2")
+        delete_button.place(x=70, y=508)
+
+        def open():
+            pass
+
+        open_button = Button(diary, text='Открыть', command=open, font=('Comic Sans MS', 11),
+                             bg='green3', fg='white', overrelief=FLAT, cursor="hand2")
+        open_button.place(x=170, y=508)
+
         diary.mainloop()
 
     # function to registration in diary
