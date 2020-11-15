@@ -257,7 +257,7 @@ def main():
                     if item_path_picture != ('',):
                         attached_picture_but['state'] = 'active'
                         full_path_picture = string_path_picture
-                        picture_symbol = '📷'
+                        picture_symbol = '✅'
                     else:
                         attached_picture_but['state'] = 'disabled'
                         full_path_picture = ''
@@ -362,7 +362,7 @@ def main():
                             name_label_picture_main['text'] = picture_n[:24] + '...'
 
                         attached_picture_but['state'] = 'active'
-                        picture_symbol = '📷'
+                        picture_symbol = '✅'
                         attach_level.focus_force()
                 except UnicodeDecodeError:
                     pass
@@ -513,7 +513,7 @@ def main():
         sound_name = ''
         sound_symbol = ''
 
-        main_label = Label(diary, text='Дневник', font=('Segoe Script', 38), bg='gray97')
+        main_label = Label(diary, text='Хлопотное дельце', font=('Segoe Script', 38), bg='gray97')
         main_label.place(relx=0.38, rely=0.06)
 
         table_name = str(user_login) + str(user_password)
@@ -607,18 +607,18 @@ def main():
 
         style_search = ttk.Style()
         style_search.configure('search.TButton', font=('Comic Sans MS', 7), width=3)
-        search_but = ttk.Button(diary, text="🔍", command=search, style='search.TButton')
+        search_but = ttk.Button(diary, text="▶", command=search, style='search.TButton')
         search_but.place(x=868, y=120)
 
         style_attached_sound = ttk.Style()
         style_attached_sound.configure('attached_sound.TButton', font=('Comic Sans MS', 9), width=3)
-        attached_sound_but = ttk.Button(diary, text="+♫", command=attached_sound, style='attached_sound.TButton',
+        attached_sound_but = ttk.Button(diary, text="+♬", command=attached_sound, style='attached_sound.TButton',
                                         state='disabled')
         attached_sound_but.place(x=405, y=181)
 
         style_attached_picture = ttk.Style()
         style_attached_picture.configure('attached_picture.TButton', font=('Comic Sans MS', 9), width=3)
-        attached_picture_but = ttk.Button(diary, text="+📷", command=attached_picture, style='attached_picture.TButton',
+        attached_picture_but = ttk.Button(diary, text="+✅", command=attached_picture, style='attached_picture.TButton',
                                           state='disabled')
         attached_picture_but.place(x=370, y=181)
 
@@ -627,7 +627,7 @@ def main():
 
         style_send_file = ttk.Style()
         style_send_file.configure('send_file.TButton', font=('Comic Sans MS', 9))
-        send_file_but = ttk.Button(diary, text="Отправить 📨", command=send_file, style='send_file.TButton')
+        send_file_but = ttk.Button(diary, text="Отправить ✉", command=send_file, style='send_file.TButton')
         send_file_but.place(x=335, y=506)
 
         style_addfile = ttk.Style()
@@ -637,7 +637,7 @@ def main():
 
         style_openfile = ttk.Style()
         style_openfile.configure('openfile.TButton', font=('Comic Sans MS', 9))
-        open_file = ttk.Button(diary, text="Открыть файл 📁", command=insert_text, style='openfile.TButton')
+        open_file = ttk.Button(diary, text="Открыть файл ☝", command=insert_text, style='openfile.TButton')
         open_file.place(x=531, y=506)
 
         style_save = ttk.Style()
@@ -647,7 +647,7 @@ def main():
 
         style_setting = ttk.Style()
         style_setting.configure('setting.TButton', font=('Comic Sans MS', 9))
-        setting_button = ttk.Button(diary, text='Настройки 🛠', command=setting, style='setting.TButton',
+        setting_button = ttk.Button(diary, text='Настройки ⚒', command=setting, style='setting.TButton',
                                     cursor="hand2")
         setting_button.place(x=433, y=506)
 
@@ -658,12 +658,12 @@ def main():
 
         style_open = ttk.Style()
         style_open.configure('open.TButton', font=('Comic Sans MS', 9), foreground='green3')
-        open_button = ttk.Button(diary, text='Открыть 💾', command=open_record, cursor="hand2", style='open.TButton')
+        open_button = ttk.Button(diary, text='Открыть ⏏', command=open_record, cursor="hand2", style='open.TButton')
         open_button.place(x=114, y=506)
 
         style_new = ttk.Style()
         style_new.configure('new.TButton', font=('Comic Sans MS', 9), foreground='blue')
-        new_button = ttk.Button(diary, text='Новый 🗋', command=new_record, cursor="hand2", style='new.TButton')
+        new_button = ttk.Button(diary, text='Новый ❒', command=new_record, cursor="hand2", style='new.TButton')
         new_button.place(x=204, y=506)
 
         if count_record == 0:
