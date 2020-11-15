@@ -5,6 +5,8 @@ from datetime import datetime
 import webbrowser
 from PIL import ImageTk, Image
 from docx import Document
+import os
+import shutil
 
 
 def main():
@@ -25,21 +27,61 @@ def main():
                 event.widget.event_generate("<<SelectAll>>")
 
         def save():
-            nonlocal count_record
+            nonlocal count_record, picture_symbol, picture_n, full_path_picture
             time = datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-            cursor.execute(f"INSERT INTO {table_name} (login, password, date, name, text) VALUES (?, ?, ?, ?, ?)",
-                           (user_login, user_password, time, name.get(), text.get('1.0', END)))
+            if full_path_picture != '':
+                old_path = full_path_picture
+                if full_path_picture.rfind('logs_ps\\') != -1:
+                    full_path_picture = full_path_picture[
+                                        :full_path_picture.rfind('logs_ps\\')] + 'pictures\\' + picture_n
+                    shutil.copyfile(old_path, full_path_picture)
+                    os.remove(old_path)
+                elif full_path_picture.rfind('pictures\\') != -1:
+                    picture_n = str(picture_n[0])
+                    full_path_picture = full_path_picture[
+                                        :full_path_picture.rfind('pictures\\')] + 'pictures\\copy_' + picture_n[
+                                        :-4] + datetime.now().strftime("%d-%m-%Y %H.%M.%S") + '.jpg'
+                    shutil.copyfile(old_path, full_path_picture)
+                    picture_n = os.path.basename(full_path_picture)
+            try:
+                cursor.execute(
+                    f"INSERT INTO {table_name} (login, password, date, name, text, picture_name, "
+                    f"picture_path, picture_symbol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (user_login, user_password, time, name.get(), text.get('1.0', END), picture_n, full_path_picture,
+                     picture_symbol))
+            except sqlite3.InterfaceError:
+                cursor.execute(
+                    f"INSERT INTO {table_name} (login, password, date, name, text, picture_name, "
+                    f"picture_path, picture_symbol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (user_login, user_password, time, name.get(), text.get('1.0', END), str(picture_n[0]),
+                     full_path_picture, picture_symbol))
             db.commit()
             list_records.delete(0, END)
             count_record = 0
-            for item1 in cursor.execute(f'SELECT id, date, name FROM {table_name}'):
-                list_records.insert(0, item1)
-                count_record += 1
+            for item1 in cursor.execute(f'SELECT id, date, picture_symbol, name FROM {table_name}'):
+                if item1[2] == '':
+                    item_list = list(item1)
+                    item_list.remove('')
+                    item1 = item_list
+                    list_records.insert(0, item1)
+                    count_record += 1
+                else:
+                    list_records.insert(0, item1)
+                    count_record += 1
             journal_lab = Label(diary, text=f"Журнал записей (всего: {count_record})", bg='white',
                                 font=('Comic Sans MS', 11))
             journal_lab.place(x=26, y=125)
             delete_button['state'] = 'normal'
             open_button['state'] = 'normal'
+            picture_n = ''
+            full_path_picture = ''
+            picture_symbol = ''
+            attached_picture_but['state'] = 'disabled'
+            name_label_picture_main['text'] = picture_n
+            name.delete(0, END)
+            name.insert(0, 'no_name')
+            name['foreground'] = 'gray55'
+            text.delete(1.0, END)
 
         def setting():
             nonlocal last_size, last_font
@@ -81,18 +123,13 @@ def main():
                 last_font = shrift_choosen.get()
 
             shrift_choosen.bind("<<ComboboxSelected>>", set_font)
-
             # Label font size
             ttk.Label(settings, text="Размер шрифта:", background='gray90').place(relx=0.043, rely=0.49)
-
             n2 = StringVar()
             size_choosen = ttk.Combobox(settings, width=3, textvariable=n2, state='readonly')
-
             # Adding combobox drop down list
             size_choosen['values'] = ('10', '12', '14')
-
             size_choosen.place(relx=0.30, rely=0.48)
-
             # Shows 12 as a default value
             for item3, numb in enumerate(size_choosen['values']):
                 if numb == last_size:
@@ -136,25 +173,57 @@ def main():
 
             keys_button.place(relx=0.75, rely=0.74)
 
+        def delete_trash():
+            nonlocal picture_n, picture_symbol
+            try:
+                if full_path_picture.rfind('logs_ps') != -1:
+                    os.remove(full_path_picture)
+                    picture_n = ''
+                    name_label_picture_main['text'] = picture_n
+                    attached_picture_but['state'] = 'disabled'
+                    picture_symbol = ''
+                elif full_path_picture.rfind('pictures') != -1:
+                    picture_n = ''
+                    name_label_picture_main['text'] = picture_n
+                    attached_picture_but['state'] = 'disabled'
+                    picture_symbol = ''
+            except FileNotFoundError:
+                pass
+
         def delete():
-            nonlocal count_record
+            nonlocal count_record, full_path_picture
             try:
                 date_rec = list_records.get(ANCHOR)
                 result = messagebox.askyesno('My diary', f'Вы действительно хотите удалить запись "{date_rec[0]}"?')
                 if result:
+                    delete_trash()
+                    for item_delete in cursor.execute(
+                            f'SELECT picture_path FROM {table_name} WHERE id = {date_rec[0]}'):
+                        full_path_picture = str(item_delete[0])
                     cursor.execute(f'DELETE FROM {table_name} WHERE id = {date_rec[0]}')
                     db.commit()
+                    if full_path_picture != '':
+                        os.remove(full_path_picture)
+                        full_path_picture = ''
                     list_records.delete(ANCHOR)
                     count_record -= 1
 
                     journal_lab = Label(diary, text=f"Журнал записей (всего: {count_record})", bg='white',
                                         font=('Comic Sans MS', 11))
                     journal_lab.place(x=26, y=125)
+
+                    if count_record == 0:
+                        delete_button['state'] = 'disabled'
+                        open_button['state'] = 'disabled'
             except IndexError:
                 pass
+            except FileNotFoundError:
+                name.insert(0, 'Изображение не найдено! ')
 
         def open_record():
+            nonlocal full_path_picture, picture_symbol, picture_n
             try:
+                delete_trash()
                 date_rec = list_records.get(ANCHOR)
                 for item4 in cursor.execute(f'SELECT name FROM {table_name} WHERE id = {date_rec[0]}'):
                     name.delete(0, END)
@@ -169,14 +238,55 @@ def main():
                     text.insert(1.0, item5)
                     text.delete(1.0)
                     text.delete(f'{num}.0')
+
+                for item_name_picture in cursor.execute(
+                        f'SELECT picture_name FROM {table_name} WHERE id = {date_rec[0]}'):
+                    if item_name_picture == ('',):
+                        name_label_picture_main['text'] = ''
+                    else:
+                        picture_n = item_name_picture
+                        picture_n = str(picture_n[0])
+                        if len(picture_n) <= 24:
+                            name_label_picture_main['text'] = picture_n
+                        else:
+                            name_label_picture_main['text'] = picture_n[:24] + '...'
+
+                for item_path_picture in cursor.execute(
+                        f'SELECT picture_path FROM {table_name} WHERE id = {date_rec[0]}'):
+                    string_path_picture = str(item_path_picture[0])
+                    if item_path_picture != ('',):
+                        attached_picture_but['state'] = 'active'
+                        full_path_picture = string_path_picture
+                        picture_symbol = '📷'
+                    else:
+                        attached_picture_but['state'] = 'disabled'
+                        full_path_picture = ''
+
             except IndexError:
+                pass
+            except FileNotFoundError:
+                name.insert(0, 'Изображение не найдено! ')
+
+        def new_record():
+            try:
+                nonlocal full_path_picture, picture_n, picture_symbol
+                delete_trash()
+                name.delete(0, END)
+                name.insert(0, 'no_name')
+                text.delete(1.0, END)
+                full_path_picture = ''
+                picture_n = ''
+                picture_symbol = ''
+                name_label_picture_main['text'] = picture_n
+                attached_picture_but['state'] = 'disabled'
+            except FileNotFoundError:
                 pass
 
         def insert_text():
             file = filedialog.askopenfilename(filetypes=[("All files", "*"), ("JPEG", "*.jpg"), ("DOCX", ".docx"),
                                                          ("PNG", "*.png"), ("TXT", "*.txt")])
             try:
-                with open(file) as f:
+                with open(file, 'r', encoding='utf-8') as f:
                     s = f.read()
                     name.delete(0, END)
                     srez = file.rfind('/') + 1
@@ -220,11 +330,50 @@ def main():
                     photo_level.mainloop()
 
         def add_file():
+            nonlocal full_path_picture, picture_n, picture_symbol
+
             def add_picture():
-                pass
+                nonlocal full_path_picture, picture_n, picture_symbol
+                try:
+                    picture = filedialog.askopenfilename(
+                        filetypes=[("All files", "*"), ("JPEG", "*.jpeg"), ("PNG", "*.png")])
+                    if picture.find('.jpeg') != -1 or picture.find('.jpg') != -1 or picture.find(
+                            '.png') != -1 or picture.find('.ico') != -1 or picture.find('.JPEG') != -1 or \
+                            picture.find('.JPG') != -1 or picture.find('.PNG') != -1 or picture.find('.ICO') != -1:
+                        picture_n = os.path.basename(picture)
+                        path_db = os.path.abspath('db_diary.db')
+                        path_db_without_file = path_db[:path_db.rfind('\\') + 1]
+                        if not os.path.isdir('.\\pictures'):
+                            os.mkdir('pictures')
+                        if not os.path.isdir('.\\logs_ps'):
+                            os.mkdir('logs_ps')
+                        full_path_picture = path_db_without_file + 'logs_ps\\' + picture_n
+                        shutil.copyfile(picture, full_path_picture)
+
+                        ok_label_picture['fg'] = 'green2'
+                        if len(picture_n) <= 20:
+                            name_label_picture['text'] = picture_n
+                        else:
+                            name_label_picture['text'] = picture_n[:20] + '...'
+
+                        if len(picture_n) <= 24:
+                            name_label_picture_main['text'] = picture_n
+                        else:
+                            name_label_picture_main['text'] = picture_n[:24] + '...'
+
+                        attached_picture_but['state'] = 'active'
+                        picture_symbol = '📷'
+                        attach_level.focus_force()
+                except UnicodeDecodeError:
+                    pass
+                except FileNotFoundError:
+                    pass
 
             def add_sound():
                 pass
+
+            def destroy_attach_window():
+                attach_level.destroy()
 
             attach_level = Toplevel(diary)
             attach_level.title('Attach file')
@@ -247,11 +396,19 @@ def main():
                                    style='add_sound.TButton')
             add_sound.place(x=30, y=70)
 
-            ok_label = Label(attach_level, text='✔', font=('Segoe Script', 12), bg='gray90', fg='gray60')
-            ok_label.place(x=174, y=30)
+            ok_label_picture = Label(attach_level, text='✔', font=('Segoe Script', 12), bg='gray90', fg='gray60')
+            ok_label_picture.place(x=174, y=30)
 
-            ok_label = Label(attach_level, text='✔', font=('Segoe Script', 12), bg='gray90', fg='gray60')
-            ok_label.place(x=232, y=70)
+            name_label_picture = Label(attach_level, text='', font=('Comic Sans MS', 10), bg='gray90')
+            name_label_picture.place(x=200, y=33)
+
+            ok_label_sound = Label(attach_level, text='✔', font=('Segoe Script', 12), bg='gray90', fg='gray60')
+            ok_label_sound.place(x=232, y=70)
+
+            style_ok = ttk.Style()
+            style_ok.configure('ok.TButton', font=('Comic Sans MS', 10))
+            ok_but = ttk.Button(attach_level, text="OK", command=destroy_attach_window, style='ok_but.TButton')
+            ok_but.place(x=302, y=157)
 
             attach_level.mainloop()
 
@@ -259,7 +416,35 @@ def main():
             pass
 
         def attached_picture():
-            pass
+            nonlocal full_path_picture, picture_n
+            try:
+                if full_path_picture.find('.jpg') != -1 or full_path_picture.find('.png') != -1 \
+                        or full_path_picture.find('.jpeg') != -1 or full_path_picture.find('.ico') != -1 or \
+                        full_path_picture.find('.JPG') != -1 or full_path_picture.find('.PNG') != -1 \
+                        or full_path_picture.find('.JPEG') != -1 or full_path_picture.find('.ICO') != -1:
+                    photo_level = Toplevel(diary)
+                    photo_level.title(picture_n)
+                    img_open = Image.open(full_path_picture)
+                    w, b = img_open.size
+                    w1 = w / 850
+                    b1 = b / 520
+                    if w1 <= 1 and b1 <= 1:
+                        img_open = img_open.resize((w, b), Image.BILINEAR)
+                    elif w1 > b1:
+                        img_open = img_open.resize((int(w / w1), int(b / w1)), Image.BILINEAR)
+                    else:
+                        img_open = img_open.resize((int(w / b1), int(b / b1)), Image.BILINEAR)
+                    img_tk = ImageTk.PhotoImage(img_open)
+                    label_img = Label(photo_level, image=img_tk)
+                    label_img.image = img_tk
+                    label_img.pack()
+                    x_coordinate = (photo_level.winfo_screenwidth() - 850) / 2
+                    y_coordinate = (photo_level.winfo_screenheight() - 520) / 2
+                    photo_level.wm_geometry("+%d+%d" % (x_coordinate, y_coordinate))
+                    photo_level.resizable(False, False)
+                    photo_level.mainloop()
+            except FileNotFoundError:
+                name.insert(0, "Изображение не найдено! ")
 
         def attached_sound():
             pass
@@ -314,11 +499,19 @@ def main():
         diary['bg'] = 'gray50'
         diary.attributes("-alpha", 0.95)
 
-        img = Image.open('second.jpg')
+        img = Image.open('main.jpg')
         imgtk = ImageTk.PhotoImage(img)
         labelq = Label(diary, image=imgtk)
         labelq.image = imgtk
         labelq.pack()
+
+        full_path_picture = ''
+        picture_n = ''
+        picture_symbol = ''
+
+        full_path_sound = ''
+        sound_name = ''
+        sound_symbol = ''
 
         main_label = Label(diary, text='Дневник', font=('Segoe Script', 38), bg='gray97')
         main_label.place(relx=0.38, rely=0.06)
@@ -332,7 +525,11 @@ def main():
                 name TEXT DEFAULT no_name,
                 text TEXT,
                 picture_name TEXT,
-                data BLOB)"""
+                picture_path TEXT,
+                picture_symbol TEXT,
+                sound_name TEXT,
+                sound_path TEXT,
+                sound_symbol TEXT)"""
         cursor.execute(sql_request)
         db.commit()
 
@@ -344,9 +541,16 @@ def main():
         list_records.pack(side="left", fill="y")
 
         count_record = 0
-        for item in cursor.execute(f'SELECT id, date, name FROM {table_name}'):
-            list_records.insert(0, item)
-            count_record += 1
+        for item in cursor.execute(f'SELECT id, date, picture_symbol, name FROM {table_name}'):
+            if item[2] == '':
+                item1_list = list(item)
+                item1_list.remove('')
+                item = item1_list
+                list_records.insert(0, item)
+                count_record += 1
+            else:
+                list_records.insert(0, item)
+                count_record += 1
 
         scrollbar_right = Scrollbar(frame_for_records, orient=VERTICAL)
         scrollbar_right.pack(side=RIGHT, fill=Y)
@@ -364,7 +568,13 @@ def main():
         list_label = Label(diary, text="№                   Дата                  Название", bg='white',
                            font=('Comic Sans MS', 7))
         list_label.place(x=22, y=147)
-
+        '''
+        delete_picture_label = Label(diary, text="x", bg='white', font=('Comic Sans MS', 11))
+        delete_picture_label.place(x=630, y=185)
+        def del_picture():
+            delete_picture_label['text'] = ''
+        delete_picture_label.bind('Button-1', del_picture)
+        '''
         google_search = ttk.Entry(diary, width=35, font=('Comic Sans MS', 8), foreground='gray47')
         google_search.place(x=618, y=121)
         google_search.insert(0, 'Google')
@@ -412,6 +622,9 @@ def main():
                                           state='disabled')
         attached_picture_but.place(x=370, y=181)
 
+        name_label_picture_main = Label(diary, text=picture_n, font=('Comic Sans MS', 10), bg='white')
+        name_label_picture_main.place(x=448, y=186)
+
         style_send_file = ttk.Style()
         style_send_file.configure('send_file.TButton', font=('Comic Sans MS', 9))
         send_file_but = ttk.Button(diary, text="Отправить 📨", command=send_file, style='send_file.TButton')
@@ -441,12 +654,17 @@ def main():
         style_save = ttk.Style()
         style_save.configure('delete.TButton', font=('Comic Sans MS', 9), foreground='red')
         delete_button = ttk.Button(diary, text='Удалить ❌', command=delete, cursor="hand2", style='delete.TButton')
-        delete_button.place(x=61, y=506)
+        delete_button.place(x=24, y=506)
 
         style_open = ttk.Style()
         style_open.configure('open.TButton', font=('Comic Sans MS', 9), foreground='green3')
         open_button = ttk.Button(diary, text='Открыть 💾', command=open_record, cursor="hand2", style='open.TButton')
-        open_button.place(x=156, y=506)
+        open_button.place(x=114, y=506)
+
+        style_new = ttk.Style()
+        style_new.configure('new.TButton', font=('Comic Sans MS', 9), foreground='blue')
+        new_button = ttk.Button(diary, text='Новый 🗋', command=new_record, cursor="hand2", style='new.TButton')
+        new_button.place(x=204, y=506)
 
         if count_record == 0:
             delete_button['state'] = 'disabled'
